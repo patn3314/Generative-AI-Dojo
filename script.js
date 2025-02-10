@@ -7,6 +7,9 @@ let currentQuestions = [];
 async function loadQuestions() {
     try {
         const response = await fetch('questions.csv');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.text();
         
         // CSVパース
@@ -18,15 +21,28 @@ async function loadQuestions() {
                 return {
                     question,
                     choices: [choice1, choice2, choice3, choice4],
-                    answer: choice1, // または適切な選択肢を指定
+                    answer: choice1,
                     explanation
                 };
             });
         
+        if (questions.length === 0) {
+            throw new Error('問題データが読み込めませんでした');
+        }
+
         showScreen('top-screen');
     } catch (error) {
         console.error('問題データの読み込みに失敗しました:', error);
-        alert('問題データの読み込みに失敗しました。ページを更新してください。');
+        document.body.innerHTML = `
+            <div class="container">
+                <div class="screen">
+                    <h1>エラー</h1>
+                    <p>問題データの読み込みに失敗しました。</p>
+                    <p>エラー内容: ${error.message}</p>
+                    <button onclick="location.reload()">再読み込み</button>
+                </div>
+            </div>
+        `;
     }
 }
 
@@ -38,7 +54,7 @@ function showScreen(screenId) {
     document.getElementById(screenId).style.display = 'block';
 }
 
-// 問題をシャッフル
+// 配列をシャッフル
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -98,5 +114,31 @@ function returnToTop() {
     showScreen('top-screen');
 }
 
+// エラーハンドリング用の関数
+function handleError(error) {
+    console.error('エラーが発生しました:', error);
+    document.body.innerHTML = `
+        <div class="container">
+            <div class="screen">
+                <h1>エラー</h1>
+                <p>予期せぬエラーが発生しました。</p>
+                <p>エラー内容: ${error.message}</p>
+                <button onclick="location.reload()">再読み込み</button>
+            </div>
+        </div>
+    `;
+}
+
 // ページ読み込み時に実行
-window.addEventListener('DOMContentLoaded', loadQuestions);
+window.addEventListener('DOMContentLoaded', () => {
+    try {
+        loadQuestions();
+    } catch (error) {
+        handleError(error);
+    }
+});
+
+// エラーハンドリング
+window.addEventListener('error', (event) => {
+    handleError(event.error);
+});
