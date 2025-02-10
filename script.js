@@ -25,16 +25,15 @@ async function loadQuestions() {
         // 問題データを作成
         questions = questionLines.map(line => {
             const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-            if (!matches || matches.length < 10) {
+            if (!matches || matches.length < 7) {
                 console.warn('Invalid line:', line);
                 return null;
             }
 
             const values = matches.map(val => val.replace(/^"(.*)"$/, '$1'));
             
-            // 空でない選択肢のみを配列に追加
-            const choices = values.slice(2, 9)
-                .filter(choice => choice !== '');
+            // 4つの選択肢を配列に追加
+            const choices = [values[2], values[3], values[4], values[5]];
 
             // 章を追加
             chapters.add(values[0]);
@@ -43,8 +42,8 @@ async function loadQuestions() {
                 chapter: values[0],
                 question: values[1],
                 choices: choices,
-                correctAnswer: choices[0],
-                explanation: values[values.length - 1]
+                correctAnswer: choices[0], // 最初の選択肢が正解
+                explanation: values[6]
             };
         }).filter(q => q !== null);
 
