@@ -25,7 +25,7 @@ async function loadQuestions() {
         // 問題データを作成
         questions = questionLines.map(line => {
             const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-            if (!matches || matches.length < 7) {
+            if (!matches || matches.length < 8) { // 最低8つの要素が必要
                 console.warn('Invalid line:', line);
                 return null;
             }
@@ -42,13 +42,15 @@ async function loadQuestions() {
                 chapter: values[0],
                 question: values[1],
                 choices: choices,
-                correctAnswer: choices[0], // 最初の選択肢が正解
-                explanation: values[6]
+                correctAnswer: values[2],    // choice1が正解
+                answer: values[6],           // 正解番号
+                explanation: values[7]        // 解説
             };
         }).filter(q => q !== null);
 
         console.log(`読み込んだ問題数: ${questions.length}`);
         console.log('検出された章:', Array.from(chapters));
+        console.log('最初の問題のサンプル:', questions[0]);
         
         if (questions.length === 0) {
             throw new Error('有効な問題データがありません');
@@ -156,8 +158,11 @@ function displayQuestion() {
 // 回答表示
 function showAnswer() {
     const question = currentQuestions[currentQuestionIndex];
+    console.log('Displaying answer for question:', question);
+
     document.getElementById('correct-answer').textContent = `正解: ${question.correctAnswer}`;
-    document.getElementById('explanation').textContent = `解説: ${question.explanation}`;
+    document.getElementById('explanation').textContent = question.explanation;
+    
     showScreen('answer-screen');
 }
 
