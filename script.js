@@ -3,66 +3,49 @@ let questions = [];
 let currentQuestionIndex = 0;
 let currentQuestions = [];
 
-// CSVの行を解析する関数
-function parseCSVLine(line) {
-    const results = [];
-    let field = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        
-        if (char === '"') {
-            if (inQuotes && line[i + 1] === '"') {
-                field += '"';
-                i++;
-            } else {
-                inQuotes = !inQuotes;
-                continue;
-            }
-        } else if (char === ',' && !inQuotes) {
-            results.push(field);
-            field = '';
-        } else {
-            field += char;
-        }
-    }
-    
-    if (field) {
-        results.push(field);
-    }
-    
-    return results.map(item => item.trim());
-}
-
-// CSVファイルを読み込む
+// CSVファイルを読み込む関数
 async function loadQuestions() {
     try {
         const response = await fetch('questions.csv');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
+        
         const data = await response.text();
         
-        // CSVパース処理
-        const rows = data
-            .split('\n')
+        // 改行コードを統一
+        const normalizedData = data.replace(/\r\n/g, '\n');
+        
+        // 行に分割
+        const lines = normalizedData.split('\n')
             .map(line => line.trim())
             .filter(line => line.length > 0);
 
-        // ヘッダー行をスキップ
-        questions = rows.slice(1).map(row => {
-            const values = parseCSVLine(row);
+        // ヘッダーをスキップ
+        const questionLines = lines.slice(1);
+        
+        // 問題データを作成
+        questions = questionLines.map(line => {
+            // カンマで分割（ただしダブルクォート内のカンマは除外）
+            const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+            if (!matches || matches.length < 7) {
+                console.warn('Invalid line:', line);
+                return null;
+            }
+
+            // ダブルクォートを除去
+            const values = matches.map(val => val.replace(/^"(.*)"$/, '$1'));
+
             return {
                 question: values[0],
                 choices: [values[1], values[2], values[3], values[4]],
-                correctAnswer: values[1], // 最初の選択肢が正解
+                correctAnswer: values[1],
                 explanation: values[6]
             };
-        });
+        }).filter(q => q !== null);
 
-        console.log(`読み込んだ問題数: ${questions.length}`); // デバッグ用
-
+        console.log(`読み込んだ問題数: ${questions.length}`);
+        
         if (questions.length === 0) {
             throw new Error('有効な問題データがありません');
         }
@@ -93,18 +76,19 @@ function showScreen(screenId) {
 
 // 配列をシャッフル
 function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    return array;
+    return shuffled;
 }
 
 // 学習開始
 function startQuiz() {
     currentQuestionIndex = 0;
     currentQuestions = shuffleArray([...questions]);
-    console.log(`クイズ開始: 合計${currentQuestions.length}問`); // デバッグ用
+    console.log(`クイズ開始: 全${currentQuestions.length}問`);
     displayQuestion();
     showScreen('quiz-screen');
 }
@@ -112,7 +96,7 @@ function startQuiz() {
 // 問題表示
 function displayQuestion() {
     const question = currentQuestions[currentQuestionIndex];
-    console.log(`現在の問題: ${currentQuestionIndex + 1}/${currentQuestions.length}`); // デバッグ用
+    console.log(`問題表示: ${currentQuestionIndex + 1}/${currentQuestions.length}`);
     
     document.getElementById('question-number').textContent = 
         `Question ${currentQuestionIndex + 1}/${currentQuestions.length}`;
@@ -154,7 +138,7 @@ function returnToTop() {
     showScreen('top-screen');
 }
 
-// エラーハンドリング用の関数
+// エラーハンドリング
 function handleError(error) {
     console.error('エラーが発生しました:', error);
     document.body.innerHTML = `
