@@ -35,6 +35,58 @@ h2 {
     margin-bottom: 15px;
 }
 
+/* ローディング画面のスタイル */
+#loading-screen {
+    text-align: center;
+    padding: 50px;
+}
+
+.progress-container {
+    width: 80%;
+    max-width: 400px;
+    height: 20px;
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    margin: 20px auto;
+    overflow: hidden;
+}
+
+.progress-bar {
+    width: 0;
+    height: 100%;
+    background-color: #4CAF50;
+    transition: width 0.3s ease;
+    background-image: linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, 0.2) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.2) 75%,
+        transparent 75%,
+        transparent
+    );
+    background-size: 50px 50px;
+    animation: loading 2s linear infinite;
+}
+
+.loading-status {
+    font-size: 1.1em;
+    color: #666;
+    margin: 15px 0;
+}
+
+.loading-detail {
+    font-size: 0.9em;
+    color: #888;
+}
+
+@keyframes loading {
+    0% { background-position: 0 0; }
+    100% { background-position: 50px 50px; }
+}
+
+/* モード選択画面のスタイル */
 .mode-selection {
     text-align: center;
     margin: 20px 0;
@@ -47,6 +99,7 @@ h2 {
     margin: 20px 0;
 }
 
+/* 問題画面のスタイル */
 .choices-container {
     display: flex;
     flex-direction: column;
@@ -54,6 +107,18 @@ h2 {
     margin-bottom: 20px;
 }
 
+.quiz-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    color: #666;
+}
+
+#chapter-name {
+    font-weight: bold;
+}
+
+/* ボタンのスタイル */
 button {
     background-color: #4CAF50;
     color: white;
@@ -62,7 +127,7 @@ button {
     border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
 }
 
 button:hover {
@@ -76,7 +141,6 @@ button:hover {
     text-align: left;
     padding: 15px;
     position: relative;
-    transition: all 0.3s ease;
 }
 
 .choice-btn:hover {
@@ -97,22 +161,7 @@ button:hover {
     background-color: #1976D2;
 }
 
-.quiz-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    color: #666;
-}
-
-#chapter-name {
-    font-weight: bold;
-}
-
-#loading-screen {
-    text-align: center;
-    padding: 50px;
-}
-
+/* 回答画面のスタイル */
 .answer-content {
     margin-bottom: 20px;
 }
@@ -171,6 +220,22 @@ button:hover {
     font-size: 0.95em;
 }
 
+/* エラー画面のスタイル */
+.error-details {
+    background-color: #f5f5f5;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.error-details pre {
+    margin: 0;
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* レスポンシブデザイン */
 @media (max-width: 600px) {
     .container {
         padding: 10px;
@@ -191,5 +256,9 @@ button:hover {
 
     h2 {
         font-size: 18px;
+    }
+
+    .progress-container {
+        width: 90%;
     }
 }
