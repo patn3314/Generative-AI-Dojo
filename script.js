@@ -1,3 +1,4 @@
+// グローバル変数
 let questions = [];
 let currentQuestionIndex = 0;
 let currentQuestions = [];
@@ -17,17 +18,21 @@ function parseCSVLine(line) {
                 i++;
             } else {
                 inQuotes = !inQuotes;
+                continue;
             }
         } else if (char === ',' && !inQuotes) {
-            results.push(field.trim());
+            results.push(field);
             field = '';
         } else {
             field += char;
         }
     }
     
-    results.push(field.trim());
-    return results;
+    if (field) {
+        results.push(field);
+    }
+    
+    return results.map(item => item.trim());
 }
 
 // CSVファイルを読み込む
@@ -40,23 +45,23 @@ async function loadQuestions() {
         const data = await response.text();
         
         // CSVパース処理
-        const rows = data.split('\n')
-            .filter(line => line.trim() !== '');
+        const rows = data
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
 
-        const header = parseCSVLine(rows[0]);
-        questions = rows.slice(1)
-            .map(row => {
-                const values = parseCSVLine(row);
-                if (values.length < 7) return null;
-                
-                return {
-                    question: values[0],
-                    choices: [values[1], values[2], values[3], values[4]],
-                    correctAnswer: values[1],
-                    explanation: values[6]
-                };
-            })
-            .filter(q => q !== null);
+        // ヘッダー行をスキップ
+        questions = rows.slice(1).map(row => {
+            const values = parseCSVLine(row);
+            return {
+                question: values[0],
+                choices: [values[1], values[2], values[3], values[4]],
+                correctAnswer: values[1], // 最初の選択肢が正解
+                explanation: values[6]
+            };
+        });
+
+        console.log(`読み込んだ問題数: ${questions.length}`); // デバッグ用
 
         if (questions.length === 0) {
             throw new Error('有効な問題データがありません');
@@ -99,6 +104,7 @@ function shuffleArray(array) {
 function startQuiz() {
     currentQuestionIndex = 0;
     currentQuestions = shuffleArray([...questions]);
+    console.log(`クイズ開始: 合計${currentQuestions.length}問`); // デバッグ用
     displayQuestion();
     showScreen('quiz-screen');
 }
@@ -106,6 +112,8 @@ function startQuiz() {
 // 問題表示
 function displayQuestion() {
     const question = currentQuestions[currentQuestionIndex];
+    console.log(`現在の問題: ${currentQuestionIndex + 1}/${currentQuestions.length}`); // デバッグ用
+    
     document.getElementById('question-number').textContent = 
         `Question ${currentQuestionIndex + 1}/${currentQuestions.length}`;
     document.getElementById('question').textContent = question.question;
@@ -146,5 +154,31 @@ function returnToTop() {
     showScreen('top-screen');
 }
 
+// エラーハンドリング用の関数
+function handleError(error) {
+    console.error('エラーが発生しました:', error);
+    document.body.innerHTML = `
+        <div class="container">
+            <div class="screen">
+                <h1>エラー</h1>
+                <p>予期せぬエラーが発生しました。</p>
+                <p>エラー内容: ${error.message}</p>
+                <button onclick="location.reload()">再読み込み</button>
+            </div>
+        </div>
+    `;
+}
+
 // ページ読み込み時に実行
-window.addEventListener('DOMContentLoaded', loadQuestions);
+window.addEventListener('DOMContentLoaded', () => {
+    try {
+        loadQuestions();
+    } catch (error) {
+        handleError(error);
+    }
+});
+
+// グローバルエラーハンドリング
+window.addEventListener('error', (event) => {
+    handleError(event.error);
+});
