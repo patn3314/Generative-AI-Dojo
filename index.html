@@ -40,8 +40,10 @@
         <!-- 回答画面 -->
         <div id="answer-screen" class="screen" style="display: none;">
             <h2>解答・解説</h2>
-            <p id="correct-answer"></p>
-            <p id="explanation"></p>
+            <p id="correct-answer" class="answer-text"></p>
+            <div class="explanation-box">
+                <p id="explanation" class="explanation-text"></p>
+            </div>
             <div class="button-container">
                 <button onclick="nextQuestion()">次の問題へ</button>
                 <button onclick="returnToTop()">終了する</button>

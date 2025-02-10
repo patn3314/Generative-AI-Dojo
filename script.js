@@ -157,7 +157,7 @@ function displayQuestion() {
 function showAnswer() {
     const question = currentQuestions[currentQuestionIndex];
     document.getElementById('correct-answer').textContent = `正解: ${question.correctAnswer}`;
-    document.getElementById('explanation').textContent = question.explanation;
+    document.getElementById('explanation').textContent = `解説: ${question.explanation}`;
     showScreen('answer-screen');
 }
 
