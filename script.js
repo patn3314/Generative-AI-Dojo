@@ -2,6 +2,8 @@
 let questions = [];
 let currentQuestionIndex = 0;
 let currentQuestions = [];
+let currentChapter = '';
+let chapters = new Set();
 
 // CSVファイルを読み込む関数
 async function loadQuestions() {
@@ -12,11 +14,7 @@ async function loadQuestions() {
         }
         
         const data = await response.text();
-        
-        // 改行コードを統一
         const normalizedData = data.replace(/\r\n/g, '\n');
-        
-        // 行に分割
         const lines = normalizedData.split('\n')
             .map(line => line.trim())
             .filter(line => line.length > 0);
@@ -26,44 +24,72 @@ async function loadQuestions() {
         
         // 問題データを作成
         questions = questionLines.map(line => {
-            // カンマで分割（ただしダブルクォート内のカンマは除外）
             const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-            if (!matches || matches.length < 7) {
+            if (!matches || matches.length < 10) {
                 console.warn('Invalid line:', line);
                 return null;
             }
 
-            // ダブルクォートを除去
             const values = matches.map(val => val.replace(/^"(.*)"$/, '$1'));
+            
+            // 空でない選択肢のみを配列に追加
+            const choices = values.slice(2, 9)
+                .filter(choice => choice !== '');
+
+            // 章を追加
+            chapters.add(values[0]);
 
             return {
-                question: values[0],
-                choices: [values[1], values[2], values[3], values[4]],
-                correctAnswer: values[1],
-                explanation: values[6]
+                chapter: values[0],
+                question: values[1],
+                choices: choices,
+                correctAnswer: choices[0],
+                explanation: values[values.length - 1]
             };
         }).filter(q => q !== null);
 
         console.log(`読み込んだ問題数: ${questions.length}`);
+        console.log('検出された章:', Array.from(chapters));
         
         if (questions.length === 0) {
             throw new Error('有効な問題データがありません');
         }
 
+        // 章ボタンを作成
+        createChapterButtons();
         showScreen('top-screen');
     } catch (error) {
-        console.error('問題データの読み込みに失敗しました:', error);
-        document.body.innerHTML = `
-            <div class="container">
-                <div class="screen">
-                    <h1>エラー</h1>
-                    <p>問題データの読み込みに失敗しました。</p>
-                    <p>エラー内容: ${error.message}</p>
-                    <button onclick="location.reload()">再読み込み</button>
-                </div>
-            </div>
-        `;
+        handleError(error);
     }
+}
+
+// 章ボタンを作成
+function createChapterButtons() {
+    const container = document.getElementById('chapter-buttons');
+    container.innerHTML = '';
+    
+    // 章ごとの問題数をカウント
+    const chapterCounts = {};
+    questions.forEach(q => {
+        chapterCounts[q.chapter] = (chapterCounts[q.chapter] || 0) + 1;
+    });
+    
+    // 章を配列に変換してソート
+    const sortedChapters = Array.from(chapters).sort();
+    
+    // 各章のボタンを作成
+    sortedChapters.forEach(chapter => {
+        const button = document.createElement('button');
+        const count = chapterCounts[chapter];
+        button.textContent = `${chapter}（${count}問）`;
+        button.onclick = () => startQuizByChapter(chapter);
+        container.appendChild(button);
+    });
+
+    // 全問題数を取得して表示
+    const totalQuestions = questions.length;
+    const allQuestionsButton = document.querySelector('.all-questions-btn');
+    allQuestionsButton.textContent = `全ての問題から出題（${totalQuestions}問）`;
 }
 
 // 画面の表示切り替え
@@ -84,11 +110,24 @@ function shuffleArray(array) {
     return shuffled;
 }
 
-// 学習開始
-function startQuiz() {
+// 特定の章の問題でクイズを開始
+function startQuizByChapter(chapter) {
+    currentChapter = chapter;
+    currentQuestionIndex = 0;
+    currentQuestions = shuffleArray(
+        questions.filter(q => q.chapter === chapter)
+    );
+    console.log(`${chapter}のクイズ開始: 全${currentQuestions.length}問`);
+    displayQuestion();
+    showScreen('quiz-screen');
+}
+
+// 全ての問題からクイズを開始
+function startQuizAll() {
+    currentChapter = '全ての問題';
     currentQuestionIndex = 0;
     currentQuestions = shuffleArray([...questions]);
-    console.log(`クイズ開始: 全${currentQuestions.length}問`);
+    console.log(`全問クイズ開始: 全${currentQuestions.length}問`);
     displayQuestion();
     showScreen('quiz-screen');
 }
@@ -98,6 +137,7 @@ function displayQuestion() {
     const question = currentQuestions[currentQuestionIndex];
     console.log(`問題表示: ${currentQuestionIndex + 1}/${currentQuestions.length}`);
     
+    document.getElementById('chapter-name').textContent = currentChapter;
     document.getElementById('question-number').textContent = 
         `Question ${currentQuestionIndex + 1}/${currentQuestions.length}`;
     document.getElementById('question').textContent = question.question;

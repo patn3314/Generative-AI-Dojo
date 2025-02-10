@@ -35,10 +35,16 @@ h2 {
     margin-bottom: 15px;
 }
 
-.progress {
-    text-align: right;
-    margin-bottom: 15px;
-    color: #666;
+.mode-selection {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
 }
 
 .choices-container {
@@ -80,11 +86,24 @@ button:hover {
     margin-top: 20px;
 }
 
-.button-container {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
+.all-questions-btn {
     margin-top: 20px;
+    background-color: #2196F3;
+}
+
+.all-questions-btn:hover {
+    background-color: #1976D2;
+}
+
+.quiz-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    color: #666;
+}
+
+#chapter-name {
+    font-weight: bold;
 }
 
 #loading-screen {
