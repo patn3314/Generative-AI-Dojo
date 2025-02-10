@@ -1,3 +1,166 @@
+// グローバル変数
+let questions = [];
+let currentQuestionIndex = 0;
+let currentQuestions = [];
+let currentChapter = '';
+let chapters = new Set();
+let selectedChoice = null;
+
+// CSVファイルを読み込む関数
+async function loadQuestions() {
+    try {
+        updateLoadingStatus('問題データをダウンロード中...', '0%', 0);
+
+        const response = await fetch('questions.csv');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        updateLoadingStatus('データを解析中...', '25%', 25);
+        const data = await response.text();
+        const normalizedData = data.replace(/\r\n/g, '\n');
+        const lines = normalizedData.split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+
+        updateLoadingStatus('問題を処理中...', '50%', 50);
+        const questionLines = lines.slice(1);
+        let processedCount = 0;
+        const totalQuestions = questionLines.length;
+        
+        // 問題データを作成
+        questions = questionLines.map(line => {
+            processedCount++;
+            const progress = 50 + (processedCount / totalQuestions * 25);
+            updateLoadingStatus(
+                '問題を処理中...',
+                `${processedCount}/${totalQuestions}問を処理完了`,
+                progress
+            );
+
+            const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+            if (!matches || matches.length < 12) {
+                console.warn('Invalid line:', line);
+                return null;
+            }
+
+            const values = matches.map(val => val.replace(/^"(.*)"$/, '$1'));
+            
+            const choices = [values[2], values[3], values[4], values[5]];
+            const choiceExplanations = [values[8], values[9], values[10], values[11]];
+
+            chapters.add(values[0]);
+
+            return {
+                chapter: values[0],
+                question: values[1],
+                choices: choices,
+                correctAnswer: values[2],
+                answer: values[6],
+                explanation: values[7],
+                choiceExplanations: choiceExplanations
+            };
+        }).filter(q => q !== null);
+
+        updateLoadingStatus('章を整理中...', '75%', 75);
+        
+        console.log(`読み込んだ問題数: ${questions.length}`);
+        console.log('検出された章:', Array.from(chapters));
+        
+        if (questions.length === 0) {
+            throw new Error('有効な問題データがありません');
+        }
+
+        updateLoadingStatus('章ボタンを作成中...', '90%', 90);
+        await createChapterButtons();
+
+        updateLoadingStatus('完了！', '100%', 100);
+        setTimeout(() => {
+            showScreen('top-screen');
+        }, 500);
+
+    } catch (error) {
+        updateLoadingStatus('エラーが発生しました', error.message, 0);
+        handleError(error);
+    }
+}
+
+// ローディング状態を更新する関数
+function updateLoadingStatus(status, detail = '', progress = 0) {
+    document.getElementById('loading-status').textContent = status;
+    document.getElementById('loading-detail').textContent = detail;
+    document.getElementById('progress-bar').style.width = `${progress}%`;
+}
+
+// 画面の表示切り替え
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.style.display = 'none';
+    });
+    document.getElementById(screenId).style.display = 'block';
+}
+
+// 配列をシャッフル
+function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+// 章ボタンを作成
+function createChapterButtons() {
+    const container = document.getElementById('chapter-buttons');
+    container.innerHTML = '';
+    
+    // 章ごとの問題数をカウント
+    const chapterCounts = {};
+    questions.forEach(q => {
+        chapterCounts[q.chapter] = (chapterCounts[q.chapter] || 0) + 1;
+    });
+    
+    // 章を配列に変換してソート
+    const sortedChapters = Array.from(chapters).sort();
+    
+    // 各章のボタンを作成
+    sortedChapters.forEach(chapter => {
+        const button = document.createElement('button');
+        const count = chapterCounts[chapter];
+        button.textContent = `${chapter}（${count}問）`;
+        button.onclick = () => startQuizByChapter(chapter);
+        container.appendChild(button);
+    });
+
+    // 全問題数を取得して表示
+    const totalQuestions = questions.length;
+    const allQuestionsButton = document.querySelector('.all-questions-btn');
+    allQuestionsButton.textContent = `全ての問題から出題（${totalQuestions}問）`;
+}
+
+// 特定の章の問題でクイズを開始
+function startQuizByChapter(chapter) {
+    currentChapter = chapter;
+    currentQuestionIndex = 0;
+    currentQuestions = shuffleArray(
+        questions.filter(q => q.chapter === chapter)
+    );
+    console.log(`${chapter}のクイズ開始: 全${currentQuestions.length}問`);
+    displayQuestion();
+    showScreen('quiz-screen');
+}
+
+// 全ての問題からクイズを開始
+function startQuizAll() {
+    currentChapter = '全ての問題';
+    currentQuestionIndex = 0;
+    currentQuestions = shuffleArray([...questions]);
+    console.log(`全問クイズ開始: 全${currentQuestions.length}問`);
+    displayQuestion();
+    showScreen('quiz-screen');
+}
+
 // 問題表示
 function displayQuestion() {
     const question = currentQuestions[currentQuestionIndex];
