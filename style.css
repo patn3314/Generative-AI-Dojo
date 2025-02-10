@@ -1,4 +1,3 @@
-/* style.css */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -106,7 +105,6 @@ button:hover {
     margin-bottom: 20px;
 }
 
-/* レスポンシブデザイン */
 @media (max-width: 600px) {
     .container {
         padding: 10px;
