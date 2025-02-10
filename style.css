@@ -75,15 +75,17 @@ button:hover {
     border: 1px solid #ddd;
     text-align: left;
     padding: 15px;
+    position: relative;
+    transition: all 0.3s ease;
 }
 
 .choice-btn:hover {
     background-color: #f5f5f5;
+    transform: translateX(5px);
 }
 
-.show-answer-btn {
-    width: 100%;
-    margin-top: 20px;
+.choice-btn:active {
+    transform: translateX(2px);
 }
 
 .all-questions-btn {
@@ -111,29 +113,62 @@ button:hover {
     padding: 50px;
 }
 
-.answer-text {
-    color: #4CAF50;
-    font-weight: bold;
-    margin-bottom: 15px;
-    font-size: 1.2em;
+.answer-content {
+    margin-bottom: 20px;
 }
 
-.explanation-box {
+.result {
+    font-size: 1.2em;
+    font-weight: bold;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.result.correct {
+    background-color: #dff0d8;
+    color: #3c763d;
+}
+
+.result.incorrect {
+    background-color: #f2dede;
+    color: #a94442;
+}
+
+.general-explanation {
     background-color: #f5f5f5;
-    border-left: 4px solid #4CAF50;
     padding: 15px;
     margin-bottom: 20px;
+    border-left: 4px solid #4CAF50;
     border-radius: 4px;
 }
 
-.explanation-text {
-    color: #333;
-    line-height: 1.6;
+.choices-explanation {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
-#explanation {
-    white-space: pre-wrap;
-    word-wrap: break-word;
+.choice-explanation {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.choice-explanation.correct-choice {
+    border-color: #4CAF50;
+    background-color: #f9fff9;
+}
+
+.choice-text {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.choice-detail {
+    color: #666;
+    font-size: 0.95em;
 }
 
 @media (max-width: 600px) {

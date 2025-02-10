@@ -4,6 +4,7 @@ let currentQuestionIndex = 0;
 let currentQuestions = [];
 let currentChapter = '';
 let chapters = new Set();
+let selectedChoice = null;
 
 // CSVファイルを読み込む関数
 async function loadQuestions() {
@@ -25,7 +26,7 @@ async function loadQuestions() {
         // 問題データを作成
         questions = questionLines.map(line => {
             const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-            if (!matches || matches.length < 8) { // 最低8つの要素が必要
+            if (!matches || matches.length < 12) {
                 console.warn('Invalid line:', line);
                 return null;
             }
@@ -34,6 +35,7 @@ async function loadQuestions() {
             
             // 4つの選択肢を配列に追加
             const choices = [values[2], values[3], values[4], values[5]];
+            const choiceExplanations = [values[8], values[9], values[10], values[11]];
 
             // 章を追加
             chapters.add(values[0]);
@@ -44,13 +46,13 @@ async function loadQuestions() {
                 choices: choices,
                 correctAnswer: values[2],    // choice1が正解
                 answer: values[6],           // 正解番号
-                explanation: values[7]        // 解説
+                explanation: values[7],       // 全体の解説
+                choiceExplanations: choiceExplanations // 各選択肢の解説
             };
         }).filter(q => q !== null);
 
         console.log(`読み込んだ問題数: ${questions.length}`);
         console.log('検出された章:', Array.from(chapters));
-        console.log('最初の問題のサンプル:', questions[0]);
         
         if (questions.length === 0) {
             throw new Error('有効な問題データがありません');
@@ -136,7 +138,7 @@ function startQuizAll() {
 // 問題表示
 function displayQuestion() {
     const question = currentQuestions[currentQuestionIndex];
-    console.log(`問題表示: ${currentQuestionIndex + 1}/${currentQuestions.length}`);
+    selectedChoice = null; // 選択をリセット
     
     document.getElementById('chapter-name').textContent = currentChapter;
     document.getElementById('question-number').textContent = 
@@ -147,21 +149,65 @@ function displayQuestion() {
     choicesDiv.innerHTML = '';
     
     const shuffledChoices = shuffleArray([...question.choices]);
-    shuffledChoices.forEach(choice => {
+    shuffledChoices.forEach((choice, index) => {
         const button = document.createElement('button');
         button.textContent = choice;
         button.className = 'choice-btn';
+        button.onclick = () => checkAnswer(choice);
         choicesDiv.appendChild(button);
     });
 }
 
-// 回答表示
-function showAnswer() {
+// 選択肢をクリックしたときの処理
+function checkAnswer(choice) {
+    selectedChoice = choice;
     const question = currentQuestions[currentQuestionIndex];
-    console.log('Displaying answer for question:', question);
+    const isCorrect = choice === question.correctAnswer;
+    showAnswer(isCorrect);
+}
 
-    document.getElementById('correct-answer').textContent = `正解: ${question.correctAnswer}`;
-    document.getElementById('explanation').textContent = question.explanation;
+// 回答表示
+function showAnswer(isCorrect = null) {
+    const question = currentQuestions[currentQuestionIndex];
+    
+    // 回答・解説画面のHTML構造を動的に生成
+    const answerContent = document.createElement('div');
+    
+    // 選択した回答の結果表示（選択があった場合）
+    if (isCorrect !== null && selectedChoice) {
+        const resultDiv = document.createElement('div');
+        resultDiv.className = `result ${isCorrect ? 'correct' : 'incorrect'}`;
+        resultDiv.textContent = isCorrect ? '正解！' : '不正解...';
+        answerContent.appendChild(resultDiv);
+    }
+
+    // 全体の解説
+    const explanationDiv = document.createElement('div');
+    explanationDiv.className = 'general-explanation';
+    explanationDiv.textContent = question.explanation;
+    answerContent.appendChild(explanationDiv);
+
+    // 各選択肢と解説
+    const choicesExplanationDiv = document.createElement('div');
+    choicesExplanationDiv.className = 'choices-explanation';
+    
+    question.choices.forEach((choice, index) => {
+        const choiceDiv = document.createElement('div');
+        choiceDiv.className = `choice-explanation ${choice === question.correctAnswer ? 'correct-choice' : ''}`;
+        
+        choiceDiv.innerHTML = `
+            <div class="choice-text">選択肢${index + 1}: ${choice}</div>
+            <div class="choice-detail">${question.choiceExplanations[index]}</div>
+        `;
+        
+        choicesExplanationDiv.appendChild(choiceDiv);
+    });
+    
+    answerContent.appendChild(choicesExplanationDiv);
+
+    // 内容を画面に表示
+    document.getElementById('answer-content').innerHTML = '';
+    document.getElementById('answer-content').appendChild(answerContent);
     
     showScreen('answer-screen');
 }
@@ -185,28 +231,4 @@ function returnToTop() {
 // エラーハンドリング
 function handleError(error) {
     console.error('エラーが発生しました:', error);
-    document.body.innerHTML = `
-        <div class="container">
-            <div class="screen">
-                <h1>エラー</h1>
-                <p>予期せぬエラーが発生しました。</p>
-                <p>エラー内容: ${error.message}</p>
-                <button onclick="location.reload()">再読み込み</button>
-            </div>
-        </div>
-    `;
 }
-
-// ページ読み込み時に実行
-window.addEventListener('DOMContentLoaded', () => {
-    try {
-        loadQuestions();
-    } catch (error) {
-        handleError(error);
-    }
-});
-
-// グローバルエラーハンドリング
-window.addEventListener('error', (event) => {
-    handleError(event.error);
-});

@@ -34,15 +34,13 @@
             </div>
             <h2 id="question"></h2>
             <div id="choices" class="choices-container"></div>
-            <button onclick="showAnswer()" class="show-answer-btn">回答を表示</button>
         </div>
 
         <!-- 回答画面 -->
         <div id="answer-screen" class="screen" style="display: none;">
             <h2>解答・解説</h2>
-            <p id="correct-answer" class="answer-text"></p>
-            <div class="explanation-box">
-                <p id="explanation" class="explanation-text"></p>
+            <div id="answer-content" class="answer-content">
+                <!-- 回答内容がここに動的に追加されます -->
             </div>
             <div class="button-container">
                 <button onclick="nextQuestion()">次の問題へ</button>
