@@ -46,16 +46,21 @@ async function loadQuestions() {
 
             const values = matches.map(val => val.replace(/^"(.*)"$/, '$1'));
             
+            // CSVの並び: [chapter, question, choice1, choice2, choice3, choice4, answer, explanation, explanation1, explanation2, explanation3, explanation4]
             const choices = [values[2], values[3], values[4], values[5]];
             const choiceExplanations = [values[8], values[9], values[10], values[11]];
 
             chapters.add(values[0]);
 
+            // CSVのanswer列は1～4の間の番号なので、parseIntで数値化してから-1し、正しいインデックスに変換する
+            const correctIndex = parseInt(values[6], 10) - 1;
+            const correctAnswer = choices[correctIndex];
+
             return {
                 chapter: values[0],
                 question: values[1],
                 choices: choices,
-                correctAnswer: values[2],
+                correctAnswer: correctAnswer, // 正解の選択肢を設定
                 answer: values[6],
                 explanation: values[7],
                 choiceExplanations: choiceExplanations
@@ -219,6 +224,7 @@ function showAnswer(isCorrect = null) {
     
     question.choices.forEach((choice, index) => {
         const choiceDiv = document.createElement('div');
+        // 正解の選択肢と比較してクラスを付与
         choiceDiv.className = `choice-explanation ${choice === question.correctAnswer ? 'correct-choice' : ''}`;
         
         choiceDiv.innerHTML = `
