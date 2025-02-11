@@ -55,8 +55,7 @@ async function loadQuestions() {
                 chapter: values[0],
                 question: values[1],
                 choices: choices,
-                correctAnswer: values[2],
-                answer: values[6],
+                correctAnswer: values[6],
                 explanation: values[7],
                 choiceExplanations: choiceExplanations
             };
@@ -110,57 +109,6 @@ function shuffleArray(array) {
     return shuffled;
 }
 
-// 章ボタンを作成
-function createChapterButtons() {
-    const container = document.getElementById('chapter-buttons');
-    container.innerHTML = '';
-    
-    // 章ごとの問題数をカウント
-    const chapterCounts = {};
-    questions.forEach(q => {
-        chapterCounts[q.chapter] = (chapterCounts[q.chapter] || 0) + 1;
-    });
-    
-    // 章を配列に変換してソート
-    const sortedChapters = Array.from(chapters).sort();
-    
-    // 各章のボタンを作成
-    sortedChapters.forEach(chapter => {
-        const button = document.createElement('button');
-        const count = chapterCounts[chapter];
-        button.textContent = `${chapter}（${count}問）`;
-        button.onclick = () => startQuizByChapter(chapter);
-        container.appendChild(button);
-    });
-
-    // 全問題数を取得して表示
-    const totalQuestions = questions.length;
-    const allQuestionsButton = document.querySelector('.all-questions-btn');
-    allQuestionsButton.textContent = `全ての問題から出題（${totalQuestions}問）`;
-}
-
-// 特定の章の問題でクイズを開始
-function startQuizByChapter(chapter) {
-    currentChapter = chapter;
-    currentQuestionIndex = 0;
-    currentQuestions = shuffleArray(
-        questions.filter(q => q.chapter === chapter)
-    );
-    console.log(`${chapter}のクイズ開始: 全${currentQuestions.length}問`);
-    displayQuestion();
-    showScreen('quiz-screen');
-}
-
-// 全ての問題からクイズを開始
-function startQuizAll() {
-    currentChapter = '全ての問題';
-    currentQuestionIndex = 0;
-    currentQuestions = shuffleArray([...questions]);
-    console.log(`全問クイズ開始: 全${currentQuestions.length}問`);
-    displayQuestion();
-    showScreen('quiz-screen');
-}
-
 // 問題表示
 function displayQuestion() {
     const question = currentQuestions[currentQuestionIndex];
@@ -175,7 +123,11 @@ function displayQuestion() {
     choicesDiv.innerHTML = '';
     
     const shuffledChoices = shuffleArray([...question.choices]);
-    shuffledChoices.forEach((choice, index) => {
+    
+    // シャッフル後の選択肢を保存
+    question.shuffledChoices = shuffledChoices;
+
+    shuffledChoices.forEach(choice => {
         const button = document.createElement('button');
         button.textContent = choice;
         button.className = 'choice-btn';
@@ -192,14 +144,20 @@ function checkAnswer(choice) {
     showAnswer(isCorrect);
 }
 
-// 回答表示
+// 回答表示（修正後）
 function showAnswer(isCorrect = null) {
     const question = currentQuestions[currentQuestionIndex];
     
+    // 選択肢のオリジナルインデックスを取得
+    const originalChoiceIndexMap = question.choices.reduce((acc, choice, index) => {
+        acc[choice] = index;
+        return acc;
+    }, {});
+
     // 回答・解説画面のHTML構造を動的に生成
     const answerContent = document.createElement('div');
-    
-    // 選択した回答の結果表示（選択があった場合）
+
+    // 結果表示
     if (isCorrect !== null && selectedChoice) {
         const resultDiv = document.createElement('div');
         resultDiv.className = `result ${isCorrect ? 'correct' : 'incorrect'}`;
@@ -216,22 +174,23 @@ function showAnswer(isCorrect = null) {
     // 各選択肢と解説
     const choicesExplanationDiv = document.createElement('div');
     choicesExplanationDiv.className = 'choices-explanation';
-    
-    question.choices.forEach((choice, index) => {
+
+    question.shuffledChoices.forEach((choice, index) => {
+        const originalIndex = originalChoiceIndexMap[choice];
         const choiceDiv = document.createElement('div');
         choiceDiv.className = `choice-explanation ${choice === question.correctAnswer ? 'correct-choice' : ''}`;
         
         choiceDiv.innerHTML = `
             <div class="choice-text">選択肢${index + 1}: ${choice}</div>
-            <div class="choice-detail">${question.choiceExplanations[index]}</div>
+            <div class="choice-detail">${question.choiceExplanations[originalIndex]}</div>
         `;
         
         choicesExplanationDiv.appendChild(choiceDiv);
     });
-    
+
     answerContent.appendChild(choicesExplanationDiv);
 
-    // 内容を画面に表示
+    // 画面に表示
     document.getElementById('answer-content').innerHTML = '';
     document.getElementById('answer-content').appendChild(answerContent);
     
@@ -257,31 +216,7 @@ function returnToTop() {
 // エラーハンドリング
 function handleError(error) {
     console.error('エラーが発生しました:', error);
-    document.body.innerHTML = `
-        <div class="container">
-            <div class="screen">
-                <h1>エラー</h1>
-                <p>予期せぬエラーが発生しました。</p>
-                <p>エラー内容: ${error.message}</p>
-                <div class="error-details">
-                    <pre>${error.stack}</pre>
-                </div>
-                <button onclick="location.reload()">再読み込み</button>
-            </div>
-        </div>
-    `;
 }
 
-// ページ読み込み時に実行
-window.addEventListener('DOMContentLoaded', () => {
-    try {
-        loadQuestions();
-    } catch (error) {
-        handleError(error);
-    }
-});
-
-// グローバルエラーハンドリング
-window.addEventListener('error', (event) => {
-    handleError(event.error);
-});
+window.addEventListener('DOMContentLoaded', loadQuestions);
+window.addEventListener('error', (event) => handleError(event.error));
