@@ -31,11 +31,10 @@ async function loadQuestions() {
         // 問題データを作成
         questions = questionLines.map(line => {
             processedCount++;
-            const progress = 50 + (processedCount / totalQuestions * 25);
             updateLoadingStatus(
                 '問題を処理中...',
                 `${processedCount}/${totalQuestions}問を処理完了`,
-                progress
+                50 + (processedCount / totalQuestions * 25)
             );
 
             const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
@@ -62,57 +61,48 @@ async function loadQuestions() {
         }).filter(q => q !== null);
 
         updateLoadingStatus('章を整理中...', '75%', 75);
-        
-        console.log(`読み込んだ問題数: ${questions.length}`);
-        console.log('検出された章:', Array.from(chapters));
-        
-        if (questions.length === 0) {
-            throw new Error('有効な問題データがありません');
-        }
-
-        updateLoadingStatus('章ボタンを作成中...', '90%', 90);
         await createChapterButtons();
 
         updateLoadingStatus('完了！', '100%', 100);
-        setTimeout(() => {
-            showScreen('top-screen');
-        }, 500);
+        setTimeout(() => showScreen('top-screen'), 500);
 
     } catch (error) {
-        updateLoadingStatus('エラーが発生しました', error.message, 0);
         handleError(error);
     }
 }
 
-// ローディング状態を更新する関数
-function updateLoadingStatus(status, detail = '', progress = 0) {
-    document.getElementById('loading-status').textContent = status;
-    document.getElementById('loading-detail').textContent = detail;
-    document.getElementById('progress-bar').style.width = `${progress}%`;
-}
+// 章ボタンを作成
+function createChapterButtons() {
+    const container = document.getElementById('chapter-buttons');
+    container.innerHTML = '';
 
-// 画面の表示切り替え
-function showScreen(screenId) {
-    document.querySelectorAll('.screen').forEach(screen => {
-        screen.style.display = 'none';
+    // 章ごとの問題数をカウント
+    const chapterCounts = {};
+    questions.forEach(q => {
+        chapterCounts[q.chapter] = (chapterCounts[q.chapter] || 0) + 1;
     });
-    document.getElementById(screenId).style.display = 'block';
-}
 
-// 配列をシャッフル
-function shuffleArray(array) {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
+    // 章を配列に変換してソート
+    const sortedChapters = Array.from(chapters).sort();
+
+    // 各章のボタンを作成
+    sortedChapters.forEach(chapter => {
+        const button = document.createElement('button');
+        button.textContent = `${chapter}（${chapterCounts[chapter]}問）`;
+        button.onclick = () => startQuizByChapter(chapter);
+        container.appendChild(button);
+    });
+
+    // 全問題から出題するボタン
+    const totalQuestions = questions.length;
+    const allQuestionsButton = document.querySelector('.all-questions-btn');
+    allQuestionsButton.textContent = `全ての問題から出題（${totalQuestions}問）`;
 }
 
 // 問題表示
 function displayQuestion() {
     const question = currentQuestions[currentQuestionIndex];
-    selectedChoice = null; // 選択をリセット
+    selectedChoice = null;
     
     document.getElementById('chapter-name').textContent = currentChapter;
     document.getElementById('question-number').textContent = 
@@ -123,7 +113,7 @@ function displayQuestion() {
     choicesDiv.innerHTML = '';
     
     const shuffledChoices = shuffleArray([...question.choices]);
-    
+
     // シャッフル後の選択肢を保存
     question.shuffledChoices = shuffledChoices;
 
@@ -144,17 +134,17 @@ function checkAnswer(choice) {
     showAnswer(isCorrect);
 }
 
-// 回答表示（修正後）
+// 回答表示
 function showAnswer(isCorrect = null) {
     const question = currentQuestions[currentQuestionIndex];
-    
+
     // 選択肢のオリジナルインデックスを取得
     const originalChoiceIndexMap = question.choices.reduce((acc, choice, index) => {
         acc[choice] = index;
         return acc;
     }, {});
 
-    // 回答・解説画面のHTML構造を動的に生成
+    // 回答・解説画面のHTML構造を生成
     const answerContent = document.createElement('div');
 
     // 結果表示
@@ -213,10 +203,27 @@ function returnToTop() {
     showScreen('top-screen');
 }
 
+// 配列をシャッフル
+function shuffleArray(array) {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+// 画面の表示切り替え
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.style.display = 'none';
+    });
+    document.getElementById(screenId).style.display = 'block';
+}
+
 // エラーハンドリング
 function handleError(error) {
-    console.error('エラーが発生しました:', error);
+    console.error('エラー:', error);
 }
 
 window.addEventListener('DOMContentLoaded', loadQuestions);
-window.addEventListener('error', (event) => handleError(event.error));
